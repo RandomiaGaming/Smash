@@ -128,11 +128,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="miniconlib.cpp" />
     <ClCompile Include="Smash.cpp" />
-    <ClCompile Include="strh.cpp" />
+    <ClCompile Include="ministrlib.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="strh.h" />
+    <ClInclude Include="miniconlib.h" />
+    <ClInclude Include="ministrlib.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

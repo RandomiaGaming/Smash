@@ -2,45 +2,40 @@
 #include <Windows.h>
 #include <Sddl.h>
 #include <aclapi.h>
-#include "strh.h"
+#include "ministrlib.h"
+#include "miniconlib.h"
 using namespace std;
-#pragma warning(disable : 4996)
 
 int main();
-
 bool Smash(const wchar_t* target);
-
 bool SubSmash(const wchar_t* target, PSID pEveryone);
+bool SubSubSmash(const wchar_t* target, PSID pEveryone);
 bool SetGodMode(bool enabled);
 bool AdjustPrivlage(const wchar_t* privlage, bool enabled);
-void Win32Error();
-void Win32Error(DWORD errorCode);
-
-const wchar_t* redCode = L"\033[1;31m";
-const wchar_t* resetCode = L"\033[0m";
 
 int main() {
 	int output = 0;
 
 	LPWSTR sysCommandLine = GetCommandLine();
-	
-	int commandLength = hwstrlen(sysCommandLine);
-	wchar_t* command = hwstrcpy(sysCommandLine);
+	wcout << sysCommandLine << endl;
 
-	wchar_t* temp = hwtrimarg(command);
+	int commandLength = wstrlen(sysCommandLine);
+	wchar_t* command = wstrcpy(sysCommandLine);
+
+	wchar_t* temp = wtrimarg(command);
 	delete[] command;
 	command = temp;
-	commandLength = hwstrlen(command);
+	commandLength = wstrlen(command);
 
-	temp = hwtrim(command);
+	temp = wtrim(command);
 	delete[] command;
 	command = temp;
-	commandLength = hwstrlen(command);
+	commandLength = wstrlen(command);
 
-	temp = hwtrimquote(command);
+	temp = wtrimquote(command);
 	delete[] command;
 	command = temp;
-	commandLength = hwstrlen(command);
+	commandLength = wstrlen(command);
 
 	if (commandLength == 0)
 	{
@@ -76,7 +71,7 @@ int main() {
 bool Smash(const wchar_t* target) {
 	//Enter GodMode
 	if (!SetGodMode(true)) {
-		wcerr << redCode << L"Error: Failed to enter GodMode." << resetCode << endl;
+		R(); wcerr << L"Error: Failed to enter GodMode." << endl; W();
 		return false;
 	}
 
@@ -84,7 +79,7 @@ bool Smash(const wchar_t* target) {
 	PSID pEveryone;
 	if (!ConvertStringSidToSid(L"S-1-1-0", &pEveryone)) {
 		Win32Error();
-		wcerr << redCode << L"Error: Failed to locate everyone security identifier." << resetCode << endl;
+		R(); wcerr << L"Error: Failed to locate everyone security identifier." << endl; W();
 		SetGodMode(false);
 		return false;
 	}
@@ -98,15 +93,6 @@ bool Smash(const wchar_t* target) {
 }
 //Smashes a file or folder recursively. Returns true if successful else false.
 bool SubSmash(const wchar_t* target, PSID pEveryone) {
-	//Smash the target file or folder
-	DWORD result = SetNamedSecurityInfo(const_cast<LPWSTR>(target), SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION, pEveryone, nullptr, nullptr, nullptr);
-	if (result != ERROR_SUCCESS) {
-		Win32Error(result);
-		wcerr << redCode << L"Error: Failed to set security info for \"" << target << "\"." << resetCode << endl;
-		return false;
-	}
-	wcout << "Smashed: \"" << target << "\"." << endl;
-
 	//Calculate subSelector
 	int targetLength = lstrlen(target);
 	wchar_t* subSelector = new wchar_t[targetLength + 3];
@@ -151,6 +137,47 @@ bool SubSmash(const wchar_t* target, PSID pEveryone) {
 	}
 	//Cleanup
 	delete[] subSelector;
+
+	return SubSubSmash(target, pEveryone);
+}
+//Smashes a single file or folder non-recursively. Returns true if successful else false.
+bool SubSubSmash(const wchar_t* target, PSID pEveryone) {
+	/*//Smash the target file or folder
+	DWORD result = SetNamedSecurityInfo(const_cast<LPWSTR>(target), SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION, pEveryone, nullptr, nullptr, nullptr);
+	if (result != ERROR_SUCCESS) {
+		Win32Error(result);
+		R(); wcerr << L"Error: Failed to set security info for \"" << target << "\"." << endl; W();
+		return false;
+	}
+	wcout << "Smashed \"" << target << "\"." << endl;
+
+	return true;*/
+
+	//Delete the target file or folder
+	DWORD attributes = GetFileAttributes(target);
+
+	if (attributes == INVALID_FILE_ATTRIBUTES) {
+		Win32Error();
+		R(); wcerr << L"Error: Failed to get file attributes of \"" << target << "\"." << endl; W();
+		return false;
+	}
+
+	if (attributes & FILE_ATTRIBUTE_DIRECTORY) {
+		if (RemoveDirectory(target) != 0) {
+			wcout << "Destroyed folder \"" << target << "\"." << endl;
+			return true;
+		}
+	}
+	else {
+		if (DeleteFile(target) != 0) {
+			wcout << "Destroyed file \"" << target << "\"." << endl;
+			return true;
+		}
+	}
+
+	Win32Error();
+	R(); wcerr << L"Error: Failed to delete file or folder \"" << target << "\"." << endl; W();
+	return false;
 }
 //Grants or revokes GodMode from the current process. Returns true if successful else false.
 bool SetGodMode(bool enabled) {
@@ -169,14 +196,14 @@ bool AdjustPrivlage(const wchar_t* privlage, bool enabled) {
 	HANDLE hToken;
 	if (!OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
 		Win32Error();
-		wcerr << redCode << "Error: Unable to open process token for current process." << resetCode << endl;
+		R(); wcerr << "Error: Unable to open process token for current process." << endl; W();
 		return false;
 	}
 
 	LUID luidPrivlage;
 	if (!LookupPrivilegeValue(NULL, privlage, &luidPrivlage)) {
 		Win32Error();
-		wcerr << redCode << "Error: Unable to lookup privlage \"" << privlage << "\"." << endl;
+		R(); wcerr << "Error: Unable to lookup privlage \"" << privlage << "\"." << endl; W();
 		CloseHandle(hToken);
 		return false;
 	}
@@ -193,29 +220,11 @@ bool AdjustPrivlage(const wchar_t* privlage, bool enabled) {
 
 	if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL)) {
 		Win32Error();
-		wcerr << redCode << "Error: Unable to adjust privlage \"" << privlage << "\"." << endl;
+		R();  wcerr << "Error: Unable to adjust privlage \"" << privlage << "\"." << endl; W();
 		CloseHandle(hToken);
 		return false;
 	}
 
 	CloseHandle(hToken);
 	return true;
-}
-//Prints the error code and error message from the last win32 error to the standard error stream.
-void Win32Error() {
-	DWORD errorCode = GetLastError();
-
-	LPVOID errorMessage;
-	DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM;
-	FormatMessage(flags, nullptr, errorCode, 0, reinterpret_cast<LPWSTR>(&errorMessage), 0, nullptr);
-	std::wcerr << redCode << L"Win32Error " << errorCode << L": " << reinterpret_cast<LPWSTR>(errorMessage) << resetCode << endl;
-	LocalFree(errorMessage);
-}
-//Prints the error code and error message from the specified error code to the standard error stream.
-void Win32Error(DWORD errorCode) {
-	LPVOID errorMessage;
-	DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM;
-	FormatMessage(flags, nullptr, errorCode, 0, reinterpret_cast<LPWSTR>(&errorMessage), 0, nullptr);
-	std::wcerr << redCode << L"Win32Error " << errorCode << L": " << reinterpret_cast<LPWSTR>(errorMessage) << resetCode;
-	LocalFree(errorMessage);
 }

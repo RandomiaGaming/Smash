@@ -1,5 +1,5 @@
-#include "strh.h";
-int hwstrlen(const wchar_t* str) {
+#include "ministrlib.h";
+int wstrlen(const wchar_t* str) {
 	if (str == nullptr) {
 		return 0;
 	}
@@ -9,11 +9,11 @@ int hwstrlen(const wchar_t* str) {
 	}
 	return length;
 }
-wchar_t* hwstrcpy(const wchar_t* source) {
+wchar_t* wstrcpy(const wchar_t* source) {
 	if (source == nullptr) {
 		return nullptr;
 	}
-	int length = hwstrlen(source);
+	int length = wstrlen(source);
 	wchar_t* copy = new wchar_t[length + 1];
 	for (int i = 0; i < length; i++)
 	{
@@ -22,14 +22,14 @@ wchar_t* hwstrcpy(const wchar_t* source) {
 	copy[length] = '\0';
 	return copy;
 }
-wchar_t* hwsubstr(const wchar_t* source, int start) {
+wchar_t* wsubstr(const wchar_t* source, int start) {
 	if (source == nullptr) {
 		return nullptr;
 	}
 	if (start < 0) {
 		start = 0;
 	}
-	int sourceLength = hwstrlen(source);
+	int sourceLength = wstrlen(source);
 	int substringLength = sourceLength - start;
 	if (substringLength < 0) {
 		substringLength = 0;
@@ -42,7 +42,7 @@ wchar_t* hwsubstr(const wchar_t* source, int start) {
 	substr[substringLength] = L'\0';
 	return substr;
 }
-wchar_t* hwsubstr(const wchar_t* source, int start, int length) {
+wchar_t* wsubstr(const wchar_t* source, int start, int length) {
 	if (source == nullptr) {
 		return nullptr;
 	}
@@ -50,7 +50,7 @@ wchar_t* hwsubstr(const wchar_t* source, int start, int length) {
 		length += start;
 		start = 0;
 	}
-	int sourceLength = hwstrlen(source);
+	int sourceLength = wstrlen(source);
 	if (length < 0) {
 		length = 0;
 	}
@@ -65,15 +65,15 @@ wchar_t* hwsubstr(const wchar_t* source, int start, int length) {
 	substr[length] = L'\0';
 	return substr;
 }
-wchar_t* hwstradd(const wchar_t* strA, wchar_t* strB) {
+wchar_t* wstradd(const wchar_t* strA, wchar_t* strB) {
 	if (strA == nullptr) {
-		return hwstrcpy(strB);
+		return wstrcpy(strB);
 	}
 	else if (strB == nullptr) {
-		return hwstrcpy(strA);
+		return wstrcpy(strA);
 	}
-	int lengthA = hwstrlen(strA);
-	int lengthB = hwstrlen(strB);
+	int lengthA = wstrlen(strA);
+	int lengthB = wstrlen(strB);
 	int outputLength = lengthA + lengthB + 1;
 	wchar_t* output = new wchar_t[outputLength];
 	for (int i = 0; i < lengthA; i++)
@@ -87,11 +87,11 @@ wchar_t* hwstradd(const wchar_t* strA, wchar_t* strB) {
 	output[outputLength] = L'\0';
 	return output;
 }
-wchar_t* hwtrim(const wchar_t* source) {
+wchar_t* wtrim(const wchar_t* source) {
 	if (source == nullptr) {
 		return nullptr;
 	}
-	int sourceLength = hwstrlen(source);
+	int sourceLength = wstrlen(source);
 	int start = 0;
 	int end = sourceLength - 1;
 	while (start < sourceLength) {
@@ -108,38 +108,38 @@ wchar_t* hwtrim(const wchar_t* source) {
 		}
 		end--;
 	}
-	return hwsubstr(source, start, end - start + 1);
+	return wsubstr(source, start, end - start + 1);
 }
-wchar_t* hwtrimarg(const wchar_t* cmdline) {
+wchar_t* wtrimarg(const wchar_t* cmdline) {
 	if (cmdline == nullptr) {
 		return nullptr;
 	}
-	int length = hwstrlen(cmdline);
+	int length = wstrlen(cmdline);
 	bool foundChar = false;
 	bool inQuotes = false;
 	for (int i = 0; i < length; i++) {
 		if (cmdline[i] == L' ') {
 			if (!inQuotes && foundChar) {
 				if (i + 1 < length) {
-					return hwsubstr(cmdline, i + 1);
+					return wsubstr(cmdline, i + 1);
 				}
 				else {
-					return hwstrcpy(L"");
+					return wstrcpy(L"");
 				}
 			}
 		}
 		else if (cmdline[i] == L'"') {
 			if (inQuotes) {
 				if (i + 1 < length) {
-					return hwsubstr(cmdline, i + 1);
+					return wsubstr(cmdline, i + 1);
 				}
 				else {
-					return hwstrcpy(L"");
+					return wstrcpy(L"");
 				}
 			}
 			else {
 				if (foundChar) {
-					return hwsubstr(cmdline, i);
+					return wsubstr(cmdline, i);
 				}
 				else {
 					inQuotes = true;
@@ -150,29 +150,29 @@ wchar_t* hwtrimarg(const wchar_t* cmdline) {
 			foundChar = true;
 		}
 	}
-	return hwstrcpy(L"");
+	return wstrcpy(L"");
 }
-wchar_t* hwtrimquote(const wchar_t* source)
+wchar_t* wtrimquote(const wchar_t* source)
 {
 	if (source == nullptr) {
 		return nullptr;
 	}
-	int length = hwstrlen(source);
+	int length = wstrlen(source);
 	if (length == 1 && source[0] == L'\"') {
-		return hwstrcpy(L"");
+		return wstrcpy(L"");
 	}
 	else if (length >= 2 && source[0] == L'"')
 	{
 		if (source[length - 1] == L'"')
 		{
-			return hwsubstr(source, 1, length - 2);
+			return wsubstr(source, 1, length - 2);
 		}
 		else
 		{
-			return hwsubstr(source, 1);
+			return wsubstr(source, 1);
 		}
 	}
 	else {
-		return hwstrcpy(source);
+		return wstrcpy(source);
 	}
 }
